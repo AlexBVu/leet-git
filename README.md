@@ -2,9 +2,7 @@
 
 A macOS widget that shows your LeetCode submissions as a GitHub-style green
 contribution graph. Pulls from LeetCode's public API (no login) using just your
-username. Comes with a tiny host app to set the username and history range.
-
-![medium widget: a grid of green cells with month + weekday labels]
+username. Username and history range are set right on the widget.
 
 ## Build & run
 
@@ -18,48 +16,38 @@ open LeetGit.xcodeproj
 
 In Xcode:
 
-1. Select the **LeetGit** target → **Signing & Capabilities** → set your Team
-   (a free personal Apple ID works). Do the same for **LeetGitWidget**.
-2. **Run** (⌘R) once. The host app launches — type your LeetCode username, pick a
-   range, done. This also installs the widget extension.
+1. **LeetGit** target → **Signing & Capabilities** → set your Team. A **free**
+   personal Apple ID works (the widget uses only app-sandbox + network-client,
+   no restricted entitlements). Do the same for **LeetGitWidget**. If your Apple
+   ID isn't listed, add it under Xcode → Settings → Accounts.
+2. **Run** (⌘R) once — this installs the widget. The host app just shows a
+   reminder of where to configure things.
 3. Add the widget: right-click the desktop (or open Notification Center) →
    **Edit Widgets** → find **LeetCode Activity** → add the medium (or large) size.
+4. **Right-click the widget → Edit Widget** → type your LeetCode username and
+   pick a history range.
 
 The widget refreshes itself roughly every 15 minutes (WidgetKit throttles this
-system-side, so it's a request, not a promise). Changing username/range in the
-app refreshes it immediately.
+system-side, so it's a request, not a promise).
 
 ## Ranges
 
 Last month / 3 months / 6 months / last year — all sliced from LeetCode's
 trailing-year data. (No "all time"; that would need older per-year fetches.)
 
-## App Group signing note
-
-Both targets share config through the App Group `group.com.leetgit`. On a **free**
-personal Apple ID this usually provisions fine for a locally-run build, but if
-Xcode complains it can't create the App Group:
-
-- Easiest fix: hardcode your username. In `Shared/AppGroup.swift`, make
-  `username` return a literal, and remove the
-  `com.apple.security.application-groups` block from both `.entitlements` files.
-  The host app becomes decorative but the widget works.
-
 ## Changing bundle IDs
 
-If `com.leetgit.*` clashes with something you own, edit the three IDs in
-`project.yml` (`bundleIdPrefix`, both `PRODUCT_BUNDLE_IDENTIFIER`s) and the group
-id in `Shared/AppGroup.swift` + both `.entitlements` files, then re-run
-`xcodegen generate`.
+If `com.leetgit.*` clashes with something you own, edit the IDs in `project.yml`
+(`bundleIdPrefix`, both `PRODUCT_BUNDLE_IDENTIFIER`s) and re-run `xcodegen generate`.
 
 ## Layout
 
 ```
-project.yml              XcodeGen spec (app + widget targets, App Group)
+project.yml              XcodeGen spec (app + widget targets)
 Shared/                  compiled into BOTH targets
-  AppGroup.swift           shared config store + HistoryRange
+  HistoryRange.swift       range presets (an App Intents enum)
   LeetCodeAPI.swift        async GraphQL fetch -> [Date: Int]
   ContributionData.swift   Day (level bucketing) + ContributionGrid.build()
-App/                     SwiftUI host app (username + range)
-Widget/                  WidgetKit extension (Provider + grid view)
+App/                     minimal SwiftUI host app (required shell for the widget)
+Widget/                  WidgetKit extension: config intent + Provider + grid view
 ```

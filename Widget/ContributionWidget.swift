@@ -1,5 +1,20 @@
 import WidgetKit
 import SwiftUI
+import AppIntents
+
+/// Widget configuration shown in the native "Edit Widget" panel.
+struct ConfigurationAppIntent: WidgetConfigurationIntent {
+    static var title: LocalizedStringResource { "LeetCode Activity" }
+    static var description: IntentDescription {
+        IntentDescription("Your LeetCode submissions as a contribution graph.")
+    }
+
+    @Parameter(title: "LeetCode Username", default: "SlowPanda")
+    var username: String
+
+    @Parameter(title: "History", default: .year)
+    var range: HistoryRange
+}
 
 struct ContributionEntry: TimelineEntry {
     let date: Date
@@ -7,39 +22,33 @@ struct ContributionEntry: TimelineEntry {
     let username: String
 }
 
-struct Provider: TimelineProvider {
-    private func emptyEntry(username: String = "") -> ContributionEntry {
+struct Provider: AppIntentTimelineProvider {
+    func placeholder(in context: Context) -> ContributionEntry {
+        ContributionEntry(date: Date(), grid: ContributionGrid.build(counts: [:], days: 365), username: "")
+    }
+
+    func snapshot(for configuration: ConfigurationAppIntent, in context: Context) async -> ContributionEntry {
         ContributionEntry(
             date: Date(),
-            grid: ContributionGrid.build(counts: [:], days: AppGroup.range.days),
-            username: username
+            grid: ContributionGrid.build(counts: [:], days: configuration.range.days),
+            username: configuration.username
         )
     }
 
-    func placeholder(in context: Context) -> ContributionEntry { emptyEntry() }
+    func timeline(for configuration: ConfigurationAppIntent, in context: Context) async -> Timeline<ContributionEntry> {
+        let counts = await LeetCodeAPI.fetchCalendar(username: configuration.username)
+        let grid = ContributionGrid.build(counts: counts, days: configuration.range.days)
+        let entry = ContributionEntry(date: Date(), grid: grid, username: configuration.username)
 
-    func getSnapshot(in context: Context, completion: @escaping (ContributionEntry) -> Void) {
-        completion(emptyEntry(username: AppGroup.username))
-    }
-
-    func getTimeline(in context: Context, completion: @escaping (Timeline<ContributionEntry>) -> Void) {
-        Task {
-            let username = AppGroup.username
-            let range = AppGroup.range
-            let counts = await LeetCodeAPI.fetchCalendar(username: username)
-            let grid = ContributionGrid.build(counts: counts, days: range.days)
-            let entry = ContributionEntry(date: Date(), grid: grid, username: username)
-
-            let next = Calendar.current.date(byAdding: .minute, value: 15, to: Date()) ?? Date().addingTimeInterval(900)
-            completion(Timeline(entries: [entry], policy: .after(next)))
-        }
+        let next = Calendar.current.date(byAdding: .minute, value: 15, to: Date()) ?? Date().addingTimeInterval(900)
+        return Timeline(entries: [entry], policy: .after(next))
     }
 }
 
 @main
 struct ContributionWidget: Widget {
     var body: some WidgetConfiguration {
-        StaticConfiguration(kind: "LeetGitWidget", provider: Provider()) { entry in
+        AppIntentConfiguration(kind: "LeetGitWidget", intent: ConfigurationAppIntent.self, provider: Provider()) { entry in
             ContributionGridView(entry: entry)
                 .containerBackground(.background, for: .widget)
         }
