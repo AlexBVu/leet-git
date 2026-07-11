@@ -35,6 +35,7 @@ codesign -v /Applications/LeetGit.app || { echo "Signature invalid after copy"; 
 "$LSREG" -f /Applications/LeetGit.app
 open /Applications/LeetGit.app
 sleep 2
+killall LeetGitWidget 2>/dev/null || true         # drop the old widget extension process
 killall chronod 2>/dev/null || true               # force the widget gallery to re-scan
 
 echo "✅ Deployed. If the widget didn't refresh, remove & re-add it on the desktop."

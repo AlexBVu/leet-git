@@ -5,7 +5,7 @@ import AppKit
 struct ContributionGridView: View {
     let entry: ContributionEntry
 
-    // GitHub palette, adaptive: light values for light mode, dark values for dark.
+    // GitHub palette, adaptive: light values for light mode, dark for dark.
     // Index 0 is the empty cell; 1...4 are increasing intensity.
     private static let palette: [Color] = [
         adaptiveColor(0xEBEDF0, 0x2D333B),
@@ -16,12 +16,21 @@ struct ContributionGridView: View {
     ]
 
     var body: some View {
+        ZStack {
+            // Opaque base so the wallpaper never shows through, whatever the
+            // system does with the container background.
+            adaptiveColor(0xFFFFFF, 0x1C1C1E)
+            content
+        }
+    }
+
+    @ViewBuilder private var content: some View {
         if entry.username.isEmpty {
             Text("Set your LeetCode username in the widget's Edit panel")
                 .font(.system(size: 12))
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .padding()
         } else {
             grid
         }
@@ -29,21 +38,25 @@ struct ContributionGridView: View {
 
     private var grid: some View {
         GeometryReader { geo in
-            let weeks = entry.grid.weeks
-            let cols = max(weeks.count, 1)
-            let pad: CGFloat = 12       // buffer around the grid
-            let spacing: CGFloat = 3    // gap between cells
+            let pad: CGFloat = 8        // small buffer to the edges
+            let spacing: CGFloat = 3
             let monthH: CGFloat = 12
-            let vGap: CGFloat = 4       // grid -> month labels
+            let vGap: CGFloat = 4
 
             let availW = geo.size.width - pad * 2
             let availH = geo.size.height - pad * 2 - monthH - vGap
-            // Square cells: fit both axes, then center the whole block.
-            let cell = max(2, min((availW - spacing * CGFloat(cols - 1)) / CGFloat(cols),
-                                  (availH - spacing * 6) / 7))
+            // Square cells sized to fill the full height (top to bottom).
+            let cell = max(2, (availH - spacing * 6) / 7)
             let step = cell + spacing
+            // Show the most recent weeks that fit the width as full squares.
+            let maxCols = max(1, Int((availW + spacing) / step))
+            let weeks = entry.grid.weeks.count > maxCols
+                ? Array(entry.grid.weeks.suffix(maxCols))
+                : entry.grid.weeks
+            let cols = weeks.count
             let gridW = cell * CGFloat(cols) + spacing * CGFloat(cols - 1)
             let radius = max(2, cell * 0.2)
+            let labels = monthLabels(weeks)
 
             VStack(spacing: vGap) {
                 HStack(alignment: .top, spacing: spacing) {
@@ -57,9 +70,9 @@ struct ContributionGridView: View {
                         }
                     }
                 }
-                // Month labels, aligned under their columns.
+                // Month labels aligned under the first column of each month.
                 ZStack(alignment: .topLeading) {
-                    ForEach(entry.grid.monthLabels) { label in
+                    ForEach(labels) { label in
                         Text(label.name)
                             .font(.system(size: 9))
                             .foregroundStyle(.secondary)
@@ -68,10 +81,27 @@ struct ContributionGridView: View {
                 }
                 .frame(width: gridW, height: monthH, alignment: .topLeading)
             }
-            .frame(width: geo.size.width, height: geo.size.height) // centers the block
+            .frame(width: geo.size.width, height: geo.size.height) // center the block
         }
     }
 
+    /// Label the first visible column of each month.
+    private func monthLabels(_ weeks: [[Day]]) -> [MonthLabel] {
+        let cal = Calendar.current
+        let df = DateFormatter()
+        df.dateFormat = "MMM"
+        var out: [MonthLabel] = []
+        var lastMonth = -1
+        for (c, week) in weeks.enumerated() {
+            guard let first = week.first?.date else { continue }
+            let month = cal.component(.month, from: first)
+            if month != lastMonth {
+                out.append(MonthLabel(column: c, name: df.string(from: first)))
+                lastMonth = month
+            }
+        }
+        return out
+    }
 }
 
 /// Appearance-adaptive color from two sRGB hex values (light, dark).

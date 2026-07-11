@@ -26,7 +26,6 @@ struct MonthLabel: Identifiable {
 
 struct ContributionGrid {
     let weeks: [[Day]]           // columns, each 7 days (Sun...Sat, top to bottom)
-    let monthLabels: [MonthLabel]
 
     /// GitHub-style grid ending today, covering `days` back, snapped to whole
     /// weeks that start on Sunday.
@@ -37,36 +36,19 @@ struct ContributionGrid {
         let rawStart = cal.date(byAdding: .day, value: -(days - 1), to: end) ?? end
         let start = cal.dateInterval(of: .weekOfYear, for: rawStart)?.start ?? rawStart
 
-        let df = DateFormatter()
-        df.dateFormat = "MMM"
-
         var weeks: [[Day]] = []
-        var monthLabels: [MonthLabel] = []
         var cursor = start
-        var lastMonth = -1
-        var col = 0
-
         while cursor <= end {
             var week: [Day] = []
             for _ in 0..<7 {
                 // Future days of the current week render as empty (count 0).
                 let count = cursor <= end ? (counts[cursor] ?? 0) : 0
                 week.append(Day(date: cursor, count: count))
-
-                if cursor <= end {
-                    let month = cal.component(.month, from: cursor)
-                    let dayOfMonth = cal.component(.day, from: cursor)
-                    if month != lastMonth && dayOfMonth <= 7 {
-                        monthLabels.append(MonthLabel(column: col, name: df.string(from: cursor)))
-                        lastMonth = month
-                    }
-                }
                 cursor = cal.date(byAdding: .day, value: 1, to: cursor) ?? cursor.addingTimeInterval(86400)
             }
             weeks.append(week)
-            col += 1
         }
-        return ContributionGrid(weeks: weeks, monthLabels: monthLabels)
+        return ContributionGrid(weeks: weeks)
     }
 }
 
