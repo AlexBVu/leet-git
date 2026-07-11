@@ -12,7 +12,7 @@ struct ConfigurationAppIntent: WidgetConfigurationIntent {
     @Parameter(title: "LeetCode Username", default: "SlowPanda")
     var username: String
 
-    @Parameter(title: "History", default: .year)
+    @Parameter(title: "History", default: .threeMonths)
     var range: HistoryRange
 }
 

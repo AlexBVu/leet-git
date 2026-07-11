@@ -1,16 +1,18 @@
 import SwiftUI
 import WidgetKit
+import AppKit
 
 struct ContributionGridView: View {
     let entry: ContributionEntry
 
-    // GitHub green palette (level 0...4).
+    // GitHub palette, adaptive: light values for light mode, dark values for dark.
+    // Index 0 is the empty cell; 1...4 are increasing intensity.
     private static let palette: [Color] = [
-        Color(hex: 0xEBEDF0),
-        Color(hex: 0x9BE9A8),
-        Color(hex: 0x40C463),
-        Color(hex: 0x30A14E),
-        Color(hex: 0x216E39),
+        dyn(0xEBEDF0, 0x2D333B),
+        dyn(0x9BE9A8, 0x0E4429),
+        dyn(0x40C463, 0x006D32),
+        dyn(0x30A14E, 0x26A641),
+        dyn(0x216E39, 0x39D353),
     ]
 
     var body: some View {
@@ -29,53 +31,56 @@ struct ContributionGridView: View {
         GeometryReader { geo in
             let weeks = entry.grid.weeks
             let cols = max(weeks.count, 1)
-            let spacing: CGFloat = 2
-            let topH: CGFloat = 11
-            let availW = geo.size.width
-            let availH = geo.size.height - topH
-            // Stretch cells to consume all available space (fills the widget).
-            // ponytail: cells go non-square for long ranges; that's the price of
-            // "fill the whole widget" with a fixed 7 rows and variable columns.
-            let cellW = max(1, (availW - spacing * CGFloat(cols - 1)) / CGFloat(cols))
-            let cellH = max(1, (availH - spacing * 6) / 7)
-            let step = cellW + spacing
+            let pad: CGFloat = 12       // buffer around the grid
+            let spacing: CGFloat = 3    // gap between cells
+            let monthH: CGFloat = 12
+            let vGap: CGFloat = 4       // grid -> month labels
 
-            VStack(alignment: .leading, spacing: 2) {
-                // Month labels, positioned by column.
-                ZStack(alignment: .topLeading) {
-                    ForEach(entry.grid.monthLabels) { label in
-                        Text(label.name)
-                            .font(.system(size: 8))
-                            .foregroundStyle(.secondary)
-                            .offset(x: CGFloat(label.column) * step)
-                    }
-                }
-                .frame(height: topH, alignment: .topLeading)
+            let availW = geo.size.width - pad * 2
+            let availH = geo.size.height - pad * 2 - monthH - vGap
+            // Square cells: fit both axes, then center the whole block.
+            let cell = max(2, min((availW - spacing * CGFloat(cols - 1)) / CGFloat(cols),
+                                  (availH - spacing * 6) / 7))
+            let step = cell + spacing
+            let gridW = cell * CGFloat(cols) + spacing * CGFloat(cols - 1)
+            let radius = max(2, cell * 0.2)
 
-                // Columns of days, edge to edge.
+            VStack(spacing: vGap) {
                 HStack(alignment: .top, spacing: spacing) {
                     ForEach(weeks.indices, id: \.self) { c in
                         VStack(spacing: spacing) {
                             ForEach(weeks[c]) { day in
-                                RoundedRectangle(cornerRadius: 1.5)
+                                RoundedRectangle(cornerRadius: radius)
                                     .fill(Self.palette[day.level])
-                                    .frame(width: cellW, height: cellH)
+                                    .frame(width: cell, height: cell)
                             }
                         }
                     }
                 }
+                // Month labels, aligned under their columns.
+                ZStack(alignment: .topLeading) {
+                    ForEach(entry.grid.monthLabels) { label in
+                        Text(label.name)
+                            .font(.system(size: 9))
+                            .foregroundStyle(.secondary)
+                            .offset(x: CGFloat(label.column) * step)
+                    }
+                }
+                .frame(width: gridW, height: monthH, alignment: .topLeading)
             }
+            .frame(width: geo.size.width, height: geo.size.height) // centers the block
         }
     }
-}
 
-extension Color {
-    init(hex: UInt) {
-        self.init(
-            .sRGB,
-            red: Double((hex >> 16) & 0xFF) / 255,
-            green: Double((hex >> 8) & 0xFF) / 255,
-            blue: Double(hex & 0xFF) / 255
-        )
+    /// Appearance-adaptive color from two sRGB hex values.
+    private static func dyn(_ light: UInt, _ dark: UInt) -> Color {
+        func ns(_ h: UInt) -> NSColor {
+            NSColor(srgbRed: CGFloat((h >> 16) & 0xFF) / 255,
+                    green: CGFloat((h >> 8) & 0xFF) / 255,
+                    blue: CGFloat(h & 0xFF) / 255, alpha: 1)
+        }
+        return Color(nsColor: NSColor(name: nil) { appearance in
+            appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua ? ns(dark) : ns(light)
+        })
     }
 }

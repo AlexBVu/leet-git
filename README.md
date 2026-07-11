@@ -30,6 +30,19 @@ In Xcode:
 The widget refreshes itself roughly every 15 minutes (WidgetKit throttles this
 system-side, so it's a request, not a promise).
 
+## Updating after a code change
+
+Xcode's ⌘R does **not** update the desktop widget — that runs from
+`/Applications/LeetGit.app`. After changing code, run:
+
+```sh
+./deploy.sh
+```
+
+It builds ad-hoc-signed, copies to `/Applications` with `ditto` (preserves the
+signature — `cp -R` breaks it), re-registers, and restarts the widget daemon. If
+the on-screen widget doesn't refresh, remove and re-add it.
+
 ## Ranges
 
 Last month / 3 months / 6 months / last year — all sliced from LeetCode's
