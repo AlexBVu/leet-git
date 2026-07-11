@@ -12,12 +12,10 @@ struct ContributionGridView: View {
         Color(hex: 0x30A14E),
         Color(hex: 0x216E39),
     ]
-    // Row order is Sun...Sat; GitHub labels only Mon/Wed/Fri.
-    private let weekdayLabels = ["", "Mon", "", "Wed", "", "Fri", ""]
 
     var body: some View {
         if entry.username.isEmpty {
-            Text("Set your LeetCode username in the app")
+            Text("Set your LeetCode username in the widget's Edit panel")
                 .font(.system(size: 12))
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -31,14 +29,16 @@ struct ContributionGridView: View {
         GeometryReader { geo in
             let weeks = entry.grid.weeks
             let cols = max(weeks.count, 1)
-            let labelW: CGFloat = 20
-            let topH: CGFloat = 11
             let spacing: CGFloat = 2
-            let availW = geo.size.width - labelW
+            let topH: CGFloat = 11
+            let availW = geo.size.width
             let availH = geo.size.height - topH
-            let cell = max(2, min((availW - spacing * CGFloat(cols - 1)) / CGFloat(cols),
-                                  (availH - spacing * 6) / 7))
-            let step = cell + spacing
+            // Stretch cells to consume all available space (fills the widget).
+            // ponytail: cells go non-square for long ranges; that's the price of
+            // "fill the whole widget" with a fixed 7 rows and variable columns.
+            let cellW = max(1, (availW - spacing * CGFloat(cols - 1)) / CGFloat(cols))
+            let cellH = max(1, (availH - spacing * 6) / 7)
+            let step = cellW + spacing
 
             VStack(alignment: .leading, spacing: 2) {
                 // Month labels, positioned by column.
@@ -47,28 +47,19 @@ struct ContributionGridView: View {
                         Text(label.name)
                             .font(.system(size: 8))
                             .foregroundStyle(.secondary)
-                            .offset(x: labelW + CGFloat(label.column) * step)
+                            .offset(x: CGFloat(label.column) * step)
                     }
                 }
                 .frame(height: topH, alignment: .topLeading)
 
+                // Columns of days, edge to edge.
                 HStack(alignment: .top, spacing: spacing) {
-                    // Weekday labels.
-                    VStack(spacing: spacing) {
-                        ForEach(0..<7, id: \.self) { row in
-                            Text(weekdayLabels[row])
-                                .font(.system(size: 7))
-                                .foregroundStyle(.secondary)
-                                .frame(width: labelW - 2, height: cell, alignment: .trailing)
-                        }
-                    }
-                    // Columns of days.
                     ForEach(weeks.indices, id: \.self) { c in
                         VStack(spacing: spacing) {
                             ForEach(weeks[c]) { day in
                                 RoundedRectangle(cornerRadius: 1.5)
                                     .fill(Self.palette[day.level])
-                                    .frame(width: cell, height: cell)
+                                    .frame(width: cellW, height: cellH)
                             }
                         }
                     }

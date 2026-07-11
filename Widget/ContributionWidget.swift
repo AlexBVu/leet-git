@@ -55,5 +55,6 @@ struct ContributionWidget: Widget {
         .configurationDisplayName("LeetCode Activity")
         .description("Your LeetCode submissions as a contribution graph.")
         .supportedFamilies([.systemMedium, .systemLarge])
+        .contentMarginsDisabled()
     }
 }
