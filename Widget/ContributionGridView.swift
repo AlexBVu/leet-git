@@ -38,13 +38,15 @@ struct ContributionGridView: View {
 
     private var grid: some View {
         GeometryReader { geo in
-            let pad: CGFloat = 8        // small buffer to the edges
+            let sidePad: CGFloat = 8
+            let topPad: CGFloat = 12    // 1.5x the bottom margin
+            let botPad: CGFloat = 8
             let spacing: CGFloat = 3
             let monthH: CGFloat = 12
             let vGap: CGFloat = 4
 
-            let availW = geo.size.width - pad * 2
-            let availH = geo.size.height - pad * 2 - monthH - vGap
+            let availW = geo.size.width - sidePad * 2
+            let availH = geo.size.height - topPad - botPad - monthH - vGap
             // Square cells sized to fill the full height (top to bottom).
             let cell = max(2, (availH - spacing * 6) / 7)
             let step = cell + spacing
@@ -58,30 +60,34 @@ struct ContributionGridView: View {
             let radius = max(2, cell * 0.2)
             let labels = monthLabels(weeks)
 
-            VStack(spacing: vGap) {
-                HStack(alignment: .top, spacing: spacing) {
-                    ForEach(weeks.indices, id: \.self) { c in
-                        VStack(spacing: spacing) {
-                            ForEach(weeks[c]) { day in
-                                RoundedRectangle(cornerRadius: radius)
-                                    .fill(Self.palette[day.level])
-                                    .frame(width: cell, height: cell)
+            VStack(spacing: 0) {
+                Color.clear.frame(height: topPad)
+                VStack(spacing: vGap) {
+                    HStack(alignment: .top, spacing: spacing) {
+                        ForEach(weeks.indices, id: \.self) { c in
+                            VStack(spacing: spacing) {
+                                ForEach(weeks[c]) { day in
+                                    RoundedRectangle(cornerRadius: radius)
+                                        .fill(Self.palette[day.level])
+                                        .frame(width: cell, height: cell)
+                                }
                             }
                         }
                     }
-                }
-                // Month labels aligned under the first column of each month.
-                ZStack(alignment: .topLeading) {
-                    ForEach(labels) { label in
-                        Text(label.name)
-                            .font(.system(size: 9))
-                            .foregroundStyle(.secondary)
-                            .offset(x: CGFloat(label.column) * step)
+                    // Month labels aligned under the first column of each month.
+                    ZStack(alignment: .topLeading) {
+                        ForEach(labels) { label in
+                            Text(label.name)
+                                .font(.system(size: 9))
+                                .foregroundStyle(.secondary)
+                                .offset(x: CGFloat(label.column) * step)
+                        }
                     }
+                    .frame(width: gridW, height: monthH, alignment: .topLeading)
                 }
-                .frame(width: gridW, height: monthH, alignment: .topLeading)
+                Spacer(minLength: 0)
             }
-            .frame(width: geo.size.width, height: geo.size.height) // center the block
+            .frame(width: geo.size.width, height: geo.size.height)
         }
     }
 
