@@ -8,11 +8,11 @@ struct ContributionGridView: View {
     // GitHub palette, adaptive: light values for light mode, dark values for dark.
     // Index 0 is the empty cell; 1...4 are increasing intensity.
     private static let palette: [Color] = [
-        dyn(0xEBEDF0, 0x2D333B),
-        dyn(0x9BE9A8, 0x0E4429),
-        dyn(0x40C463, 0x006D32),
-        dyn(0x30A14E, 0x26A641),
-        dyn(0x216E39, 0x39D353),
+        adaptiveColor(0xEBEDF0, 0x2D333B),
+        adaptiveColor(0x9BE9A8, 0x0E4429),
+        adaptiveColor(0x40C463, 0x006D32),
+        adaptiveColor(0x30A14E, 0x26A641),
+        adaptiveColor(0x216E39, 0x39D353),
     ]
 
     var body: some View {
@@ -72,15 +72,16 @@ struct ContributionGridView: View {
         }
     }
 
-    /// Appearance-adaptive color from two sRGB hex values.
-    private static func dyn(_ light: UInt, _ dark: UInt) -> Color {
-        func ns(_ h: UInt) -> NSColor {
-            NSColor(srgbRed: CGFloat((h >> 16) & 0xFF) / 255,
-                    green: CGFloat((h >> 8) & 0xFF) / 255,
-                    blue: CGFloat(h & 0xFF) / 255, alpha: 1)
-        }
-        return Color(nsColor: NSColor(name: nil) { appearance in
-            appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua ? ns(dark) : ns(light)
-        })
+}
+
+/// Appearance-adaptive color from two sRGB hex values (light, dark).
+func adaptiveColor(_ light: UInt, _ dark: UInt) -> Color {
+    func ns(_ h: UInt) -> NSColor {
+        NSColor(srgbRed: CGFloat((h >> 16) & 0xFF) / 255,
+                green: CGFloat((h >> 8) & 0xFF) / 255,
+                blue: CGFloat(h & 0xFF) / 255, alpha: 1)
     }
+    return Color(nsColor: NSColor(name: nil) { appearance in
+        appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua ? ns(dark) : ns(light)
+    })
 }

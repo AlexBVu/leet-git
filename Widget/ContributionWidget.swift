@@ -50,7 +50,8 @@ struct ContributionWidget: Widget {
     var body: some WidgetConfiguration {
         AppIntentConfiguration(kind: "LeetGitWidget", intent: ConfigurationAppIntent.self, provider: Provider()) { entry in
             ContributionGridView(entry: entry)
-                .containerBackground(.background, for: .widget)
+                // Solid, opaque background so the wallpaper doesn't muddy it.
+                .containerBackground(adaptiveColor(0xFFFFFF, 0x1C1C1E), for: .widget)
         }
         .configurationDisplayName("LeetCode Activity")
         .description("Your LeetCode submissions as a contribution graph.")
