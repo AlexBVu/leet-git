@@ -2,25 +2,29 @@ import AppIntents
 
 /// How far back the contribution grid reaches. Presented as a menu in the
 /// widget's Edit panel. All ranges are slices of LeetCode's trailing-year data.
-enum HistoryRange: String, CaseIterable, Identifiable, AppEnum {
+public enum HistoryRange: String, CaseIterable, Identifiable, AppEnum {
+    // Raw values are what AppIntents persists for a configured widget — renaming
+    // a case resets the user's selection to the default, so `month` stays
+    // `month` even though it now means four weeks.
     case month, threeMonths, sixMonths, year
 
-    var id: String { rawValue }
+    public var id: String { rawValue }
 
-    var days: Int {
+    /// Number of Sunday-start columns, including the current partial week.
+    public var weeks: Int {
         switch self {
-        case .month: return 31
-        case .threeMonths: return 92
-        case .sixMonths: return 183
-        case .year: return 365
+        case .month: return 4
+        case .threeMonths: return 13
+        case .sixMonths: return 26
+        case .year: return 52
         }
     }
 
-    static var typeDisplayRepresentation: TypeDisplayRepresentation { "History" }
+    public static var typeDisplayRepresentation: TypeDisplayRepresentation { "History" }
 
-    static var caseDisplayRepresentations: [HistoryRange: DisplayRepresentation] {
+    public static var caseDisplayRepresentations: [HistoryRange: DisplayRepresentation] {
         [
-            .month: "Last month",
+            .month: "Last 4 weeks",
             .threeMonths: "Last 3 months",
             .sixMonths: "Last 6 months",
             .year: "Last year",

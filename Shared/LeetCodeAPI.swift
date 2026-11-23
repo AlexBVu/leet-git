@@ -33,13 +33,21 @@ enum LeetCodeAPI {
               let raw = (try? JSONSerialization.jsonObject(with: calData)) as? [String: Int]
         else { return [:] }
 
-        // ponytail: LeetCode keys days by UTC midnight; we bucket into the local
-        // calendar day. Fine for a personal tracker; edge days may shift by one.
-        let cal = Calendar.current
+        // LeetCode keys each bucket by that day's UTC midnight, so the key is a
+        // date *label*, not an instant to convert. Read the calendar date back
+        // out in UTC and re-file it under the same-numbered local day. Calling
+        // startOfDay on the raw timestamp instead lands every bucket a day early
+        // anywhere west of Greenwich — in Los Angeles, UTC midnight is 5pm the
+        // previous afternoon, so today's submissions showed up on yesterday.
+        let local = Calendar.current
+        var utc = Calendar(identifier: .gregorian)
+        utc.timeZone = TimeZone(secondsFromGMT: 0) ?? utc.timeZone
+
         var result: [Date: Int] = [:]
         for (tsString, count) in raw {
             guard let ts = TimeInterval(tsString) else { continue }
-            let day = cal.startOfDay(for: Date(timeIntervalSince1970: ts))
+            let parts = utc.dateComponents([.year, .month, .day], from: Date(timeIntervalSince1970: ts))
+            guard let day = local.date(from: parts) else { continue }
             result[day] = count
         }
         return result

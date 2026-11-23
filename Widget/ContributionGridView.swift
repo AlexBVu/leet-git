@@ -21,6 +21,7 @@ struct ContributionGridView: View {
             // system does with the container background.
             adaptiveColor(0xFFFFFF, 0x1C1C1E)
             content
+                .widgetAccentable()
         }
     }
 
@@ -58,7 +59,7 @@ struct ContributionGridView: View {
             let cols = weeks.count
             let gridW = cell * CGFloat(cols) + spacing * CGFloat(cols - 1)
             let radius = max(2, cell * 0.2)
-            let labels = monthLabels(weeks)
+            let labels = monthLabels(weeks, step: step)
 
             VStack(spacing: 0) {
                 Color.clear.frame(height: topPad)
@@ -91,8 +92,9 @@ struct ContributionGridView: View {
         }
     }
 
-    /// Label the first visible column of each month.
-    private func monthLabels(_ weeks: [[Day]]) -> [MonthLabel] {
+    /// Label the first visible column of each month, dropping any that would
+    /// collide with the month after it (the leading partial month usually).
+    private func monthLabels(_ weeks: [[Day]], step: CGFloat) -> [MonthLabel] {
         let cal = Calendar.current
         let df = DateFormatter()
         df.dateFormat = "MMM"
@@ -106,7 +108,15 @@ struct ContributionGridView: View {
                 lastMonth = month
             }
         }
-        return out
+        // ponytail: "MMM" at 9pt is ~22pt wide; walk newest-first so a squeezed
+        // pair keeps the more recent month.
+        let minGap = 22 / step
+        var kept: [MonthLabel] = []
+        for label in out.reversed() {
+            if let prev = kept.last, CGFloat(prev.column - label.column) < minGap { continue }
+            kept.append(label)
+        }
+        return kept.reversed()
     }
 }
 

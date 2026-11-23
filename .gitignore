@@ -10,3 +10,12 @@ Screenshot*.png
 *.png
 *.jpg
 *.jpeg
+
+# AI assistant files — local only
+CLAUDE.md
+AGENTS.md
+GEMINI.md
+.claude/
+.cursor/
+.gemini/
+docs/superpowers/
