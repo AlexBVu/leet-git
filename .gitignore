@@ -19,3 +19,5 @@ GEMINI.md
 .cursor/
 .gemini/
 docs/superpowers/
+config.bat
+node_modules
